@@ -42,5 +42,7 @@ if __name__=='__main__':
             if l[2]-20>temp:
                 temp = l[2]
                 e+=1
-                letterImage = original[l[0]:l[1]+1,l[2]-2:l[3]+1]
+                letterImage = original[l[0]-5:l[1]+1+5,l[2]-5:l[3]+1+5]
+                letterImage = cv2.resize(letterImage, (50,50))
+                letterImage = cv2.adaptiveThreshold(letterImage,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,15,-2)
                 cv2.imwrite(f"numberPlates/{i}/{i}_{e}.jpg", letterImage)
