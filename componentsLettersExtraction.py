@@ -16,7 +16,6 @@ if __name__=='__main__':
     connections = cv2.connectedComponentsWithStats(maskedImage, 2, cv2.CV_32S)
     (numLabels, labels, stats, centroids) = connections
 
-    outputImage = image.copy()
     for i in range(1,numLabels):
         y = stats[i, cv2.CC_STAT_TOP]
         x = stats[i, cv2.CC_STAT_LEFT]

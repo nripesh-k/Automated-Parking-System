@@ -49,8 +49,6 @@ if __name__=='__main__':
     connections = cv2.connectedComponentsWithStats(maskedImage, 2, cv2.CV_32S)
     (numLabels, labels, stats, centroids) = connections
 
-    outputImage = image.copy()
-
     letterLike = []
 
     for i in range(1,numLabels):
@@ -61,7 +59,6 @@ if __name__=='__main__':
         area = stats[i, cv2.CC_STAT_AREA]
         if (area > 50 and area < 500):
             if not((w/h)>1.5 or (h/w)>1.5):
-                cv2.rectangle(outputImage, (x,y), (x+w,y+h), (0,255,0), 2)
                 letterLike.append([x,y,w,h])
 
 
@@ -91,7 +88,6 @@ if __name__=='__main__':
     connections = cv2.connectedComponentsWithStats(maskedImage, 2, cv2.CV_32S)
     (numLabels, labels, stats, centroids) = connections
 
-    outputImage = image.copy()
     for i in range(1,numLabels):
         y = stats[i, cv2.CC_STAT_TOP]
         x = stats[i, cv2.CC_STAT_LEFT]
