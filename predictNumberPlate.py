@@ -35,16 +35,48 @@ def findCluster(letterLike):
 
     numberPlateCluster = cluster[np.argmax([len(i) for i in cluster])]
     numbers = []
-    for c in numberPlateCluster:
-        numbers.append(letterLike[c])
+    if len(numberPlateCluster)>=4:
+        for c in numberPlateCluster:
+            numbers.append(letterLike[c])
     return numbers
 
+def predictNumberPlate(numberPlate):
+    numberPlatePrediction = ''
+    recognitoinModel = mdl.model()
+    recognitoinModel.load_weights('weights.h5')
+    
+    
+    # maskedNumberPlateImage = cv2.adaptiveThreshold(numberPlate,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,15,-2)
+    _, maskedNumberPlateImage =  cv2.threshold(numberPlate,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+
+    # cv2.imshow('1', maskedNumberPlateImage)
+    # cv2.waitKey(4000)
+    connections = cv2.connectedComponentsWithStats(maskedNumberPlateImage, 2, cv2.CV_32S)
+    (numLabels, labels, stats, centroids) = connections
+
+    for i in range(1,numLabels):
+        y = stats[i, cv2.CC_STAT_TOP]
+        x = stats[i, cv2.CC_STAT_LEFT]
+        w = stats[i, cv2.CC_STAT_WIDTH]
+        h = stats[i, cv2.CC_STAT_HEIGHT]
+        area = stats[i, cv2.CC_STAT_AREA]
+        if area>500:
+            if not (w/h > 2.5 or h/w > 2.5):
+                img = np.zeros((1,50,50),dtype=np.float32)
+                img[0,:,:] = cv2.resize(maskedNumberPlateImage[y:y+h,x:x+w], (50,50))
+                prediction = recognitoinModel.predict(img)
+                numberPlatePrediction+=mdl.character[np.argmax(prediction[0])]
+    
+    return numberPlatePrediction
+
+
 if __name__=='__main__':
-    image = cv2.imread("images/1.jpg")
+    min_width = 130
+    image = cv2.imread("images/3.jpg")
     image = cv2.resize(image, (620,480) )
 
     grayImage = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    _,maskedImage = cv2.threshold(grayImage,50,255,cv2.THRESH_OTSU)
+    _,maskedImage = cv2.threshold(grayImage,0,255,cv2.THRESH_OTSU)
 
     connections = cv2.connectedComponentsWithStats(maskedImage, 2, cv2.CV_32S)
     (numLabels, labels, stats, centroids) = connections
@@ -61,44 +93,24 @@ if __name__=='__main__':
             if not((w/h)>1.5 or (h/w)>1.5):
                 letterLike.append([x,y,w,h])
 
-
     numbers = findCluster(letterLike)
-
-    numbers = np.array(numbers)
-    maxX,maxY,maxW,maxH = np.max(numbers, axis=0)
-    x,y,_,_ = np.min(numbers, axis=0)
-
-    numberPlate = grayImage[y-5:maxY+maxH+5,x-5:maxX+maxW+5]
-    if (numberPlate.shape[1]/numberPlate.shape[0]>2):
-        numberPlate = cv2.resize(numberPlate, (300,75))
-    else:
-        numberPlate = cv2.resize(numberPlate, (300,200))
-
-    # cv2.imwrite(f"numberPlates/{id}.jpg", numberPlate)
-
-    numberPlatePrediction = ''
-    recognitoinModel = mdl.model()
-    recognitoinModel.load_weights('weights.h5')
     
-    id = 2
-    image = cv2.imread(f"numberPlates/{id}.jpg", cv2.IMREAD_GRAYSCALE)
-    
-    maskedImage = cv2.adaptiveThreshold(image,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,15,-2)
+    if numbers:
+        predict = False
+        numbers = np.array(numbers)
+        maxX,maxY,maxW,maxH = np.max(numbers, axis=0)
+        x,y,_,_ = np.min(numbers, axis=0)
+        if (maxX+maxW-x)/(maxY+maxH-y)>2:
+            if min_width <= maxX+maxW-x:
+                numberPlate = grayImage[y-2:maxY+maxH+2,x-2:maxX+maxW+2]
+                numberPlate = cv2.resize(numberPlate, (300,75))
+                predict = True
+        else:
+            if min_width//2 <= maxX+maxW-x:
+                numberPlate = grayImage[y-2:maxY+maxH+2,x-2:maxX+maxW+2]
+                numberPlate = cv2.resize(numberPlate, (300,200))
+                predict = True
 
-    connections = cv2.connectedComponentsWithStats(maskedImage, 2, cv2.CV_32S)
-    (numLabels, labels, stats, centroids) = connections
-
-    for i in range(1,numLabels):
-        y = stats[i, cv2.CC_STAT_TOP]
-        x = stats[i, cv2.CC_STAT_LEFT]
-        w = stats[i, cv2.CC_STAT_WIDTH]
-        h = stats[i, cv2.CC_STAT_HEIGHT]
-        area = stats[i, cv2.CC_STAT_AREA]
-        if area>500 and area<2500:
-            if not (w/h > 2.5 or h/w > 2.5):
-                img = np.zeros((1,50,50),dtype=np.float32)
-                img[0,:,:] = cv2.resize(maskedImage[y-2:y+h+2,x-2:x+w+2], (50,50))
-                prediction = recognitoinModel.predict(img)
-                numberPlatePrediction+=mdl.character[np.argmax(prediction[0])]
-
-    print(numberPlatePrediction)
+        if predict:
+            numberPlatePrediction = predictNumberPlate(numberPlate)
+            print(numberPlatePrediction)
