@@ -4,12 +4,7 @@ from skimage.transform import resize
 import numpy as np
 import cv2
 
-
-EMPTY = True
-NOT_EMPTY = False
-
 MODEL = pickle.load(open("saved_model.p", "rb"))
-
 
 def empty_or_not(spot_bgr):
 
@@ -22,9 +17,9 @@ def empty_or_not(spot_bgr):
     y_output = MODEL.predict(flat_data)
 
     if y_output == 0:
-        return EMPTY
+        return True
     else:
-        return NOT_EMPTY
+        return False
 
 
 def get_parking_spots_bboxes(connected_components):
@@ -34,7 +29,7 @@ def get_parking_spots_bboxes(connected_components):
     coef = 1
     for i in range(1, totalLabels):
 
-        # Now extract the coordinate points
+        # This extracts the coordinates
         x1 = int(values[i, cv2.CC_STAT_LEFT] * coef)
         y1 = int(values[i, cv2.CC_STAT_TOP] * coef)
         w = int(values[i, cv2.CC_STAT_WIDTH] * coef)
