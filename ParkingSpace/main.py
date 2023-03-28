@@ -2,35 +2,43 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
-from util import get_parking_spots_bboxes, empty_or_not
+from util import get_parking_spots, empty_or_not
 
-
+# To compare two instances for each crop and look for change
 def calc_diff(im1, im2):
     return np.abs(np.mean(im1) - np.mean(im2))
 
+# saved_mask.png
 mask = './mask_1920_1080.png'
-video_path = './parking_1920_1080_loop.mp4'
+
+video_path = './parking_1920_1080.mp4'
 
 mask = cv2.imread(mask, 0)
 
 cap = cv2.VideoCapture(video_path)
 
+# Getting the boxes with connected components usage
 connected_components = cv2.connectedComponentsWithStats(mask, 4, cv2.CV_32S)
-
-spots = get_parking_spots_bboxes(connected_components)
+spots = get_parking_spots(connected_components)
+print(spots)
 
 spots_status = [None for j in spots]
 diffs = [None for j in spots]
 
-previous_frame = None
+previous_frame = None # To compare each frames
+frame_count = 0
+step = 60
 
-frame_nmr = 0
 ret = True
-step = 30
 while ret:
-    ret, frame = cap.read()
+    # Looping video
+    if cap.get(cv2.CAP_PROP_POS_FRAMES) == cap.get(cv2.CAP_PROP_FRAME_COUNT):
+            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
-    if frame_nmr % step == 0 and previous_frame is not None:
+    #Read video
+    rets, frame = cap.read()
+
+    if frame_count % step == 0 and previous_frame is not None:
         for spot_indx, spot in enumerate(spots):
             x1, y1, w, h = spot
 
@@ -38,9 +46,9 @@ while ret:
 
             diffs[spot_indx] = calc_diff(spot_crop, previous_frame[y1:y1 + h, x1:x1 + w, :])
 
-        print([diffs[j] for j in np.argsort(diffs)][::-1])
+        # print([diffs[j] for j in np.argsort(diffs)][::-1])
 
-    if frame_nmr % step == 0:
+    if frame_count % step == 0:
         if previous_frame is None:
             arr_ = range(len(spots))
         else:
@@ -55,9 +63,10 @@ while ret:
 
             spots_status[spot_indx] = spot_status
 
-    if frame_nmr % step == 0:
+    # if frame_count % step == 0:
         previous_frame = frame.copy()
 
+    # Spot red or green
     for spot_indx, spot in enumerate(spots):
         spot_status = spots_status[spot_indx]
         x1, y1, w, h = spots[spot_indx]
@@ -67,6 +76,7 @@ while ret:
         else:
             frame = cv2.rectangle(frame, (x1, y1), (x1 + w, y1 + h), (0, 0, 255), 2)
 
+    # Available spots text
     cv2.rectangle(frame, (80, 20), (550, 80), (0, 0, 0), -1)
     cv2.putText(frame, 'Available spots: {} / {}'.format(str(sum(spots_status)), str(len(spots_status))), (100, 60),
                 cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
@@ -76,7 +86,7 @@ while ret:
     if cv2.waitKey(25) & 0xFF == ord('q'):
         break
 
-    frame_nmr += 1
+    frame_count += 1 #increment just by one each frame running
 
 cap.release()
 cv2.destroyAllWindows()

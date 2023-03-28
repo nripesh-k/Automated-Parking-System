@@ -22,7 +22,7 @@ def empty_or_not(spot_bgr):
         return False
 
 
-def get_parking_spots_bboxes(connected_components):
+def get_parking_spots(connected_components):
     (totalLabels, label_ids, values, centroid) = connected_components
 
     slots = []
