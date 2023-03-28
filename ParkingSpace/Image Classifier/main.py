@@ -14,7 +14,6 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
 
-
 # preparing the data
 inp_dir = './all-data'
 cats = ['empty', 'not_empty']

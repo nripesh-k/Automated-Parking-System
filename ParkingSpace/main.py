@@ -1,53 +1,82 @@
-
 import cv2
-import pickle
+import matplotlib.pyplot as plt
 import numpy as np
 
-# Video feed
-cap = cv2.VideoCapture('carPark.mp4')
-
-with open('CarParkPos', 'rb') as f:
-    posList = pickle.load(f)
-
-width, height = 107, 48
+from util import get_parking_spots_bboxes, empty_or_not
 
 
-def checkParkingSpace(imgPro):
-    spaceCounter = 0
+def calc_diff(im1, im2):
+    return np.abs(np.mean(im1) - np.mean(im2))
 
-    for pos in posList:
-        x, y = pos
-        imgCrop = imgPro[y:y + height, x:x + width]
-        # cv2.imshow(str(x * y), imgCrop)
-        count = cv2.countNonZero(imgCrop)
-        
-        if count < 900:
-            color = (0, 255, 0)
-            thickness = 5
-            spaceCounter += 1
+mask = './mask_1920_1080.png'
+video_path = './parking_1920_1080_loop.mp4'
+
+mask = cv2.imread(mask, 0)
+
+cap = cv2.VideoCapture(video_path)
+
+connected_components = cv2.connectedComponentsWithStats(mask, 4, cv2.CV_32S)
+
+spots = get_parking_spots_bboxes(connected_components)
+
+spots_status = [None for j in spots]
+diffs = [None for j in spots]
+
+previous_frame = None
+
+frame_nmr = 0
+ret = True
+step = 30
+while ret:
+    ret, frame = cap.read()
+
+    if frame_nmr % step == 0 and previous_frame is not None:
+        for spot_indx, spot in enumerate(spots):
+            x1, y1, w, h = spot
+
+            spot_crop = frame[y1:y1 + h, x1:x1 + w, :]
+
+            diffs[spot_indx] = calc_diff(spot_crop, previous_frame[y1:y1 + h, x1:x1 + w, :])
+
+        print([diffs[j] for j in np.argsort(diffs)][::-1])
+
+    if frame_nmr % step == 0:
+        if previous_frame is None:
+            arr_ = range(len(spots))
         else:
-            color = (0, 0, 255)
-            thickness = 2
+            arr_ = [j for j in np.argsort(diffs) if diffs[j] / np.amax(diffs) > 0.4]
+        for spot_indx in arr_:
+            spot = spots[spot_indx]
+            x1, y1, w, h = spot
 
-        cv2.rectangle(img, pos, (pos[0] + width, pos[1] + height), color, thickness)
-        cv2.putText(img, str(count), (x, y + height), cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=color,thickness=2)
+            spot_crop = frame[y1:y1 + h, x1:x1 + w, :]
 
-    cv2.putText(img, f'Free: {spaceCounter}/{len(posList)}', (50, 50), cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.5, color=(0,190,0), thickness=5)
+            spot_status = empty_or_not(spot_crop)
 
-if __name__ == "__main__":
-    while True:
-        if cap.get(cv2.CAP_PROP_POS_FRAMES) == cap.get(cv2.CAP_PROP_FRAME_COUNT):
-            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-        success, img = cap.read()
-        imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        imgBlur = cv2.GaussianBlur(imgGray, (3, 3), 1)
-        imgThreshold = cv2.adaptiveThreshold(imgBlur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 25, 16)
-        imgMedian = cv2.medianBlur(imgThreshold, 5)
-        kernel = np.ones((3, 3), np.uint8)
-        imgDilate = cv2.dilate(imgMedian, kernel, iterations=1)
+            spots_status[spot_indx] = spot_status
 
-        checkParkingSpace(imgDilate)
-        cv2.imshow("Image", img)
-        # cv2.imshow("ImageBlur", imgBlur)
-        # cv2.imshow("ImageThres", imgMedian)
-        cv2.waitKey(10)
+    if frame_nmr % step == 0:
+        previous_frame = frame.copy()
+
+    for spot_indx, spot in enumerate(spots):
+        spot_status = spots_status[spot_indx]
+        x1, y1, w, h = spots[spot_indx]
+
+        if spot_status:
+            frame = cv2.rectangle(frame, (x1, y1), (x1 + w, y1 + h), (0, 255, 0), 2)
+        else:
+            frame = cv2.rectangle(frame, (x1, y1), (x1 + w, y1 + h), (0, 0, 255), 2)
+
+    cv2.rectangle(frame, (80, 20), (550, 80), (0, 0, 0), -1)
+    cv2.putText(frame, 'Available spots: {} / {}'.format(str(sum(spots_status)), str(len(spots_status))), (100, 60),
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+
+    cv2.namedWindow('frame', cv2.WINDOW_NORMAL)
+    cv2.imshow('frame', frame)
+    if cv2.waitKey(25) & 0xFF == ord('q'):
+        break
+
+    frame_nmr += 1
+
+cap.release()
+cv2.destroyAllWindows()
