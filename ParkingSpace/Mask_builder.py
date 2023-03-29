@@ -1,6 +1,7 @@
 import cv2
 import pickle
- 
+import numpy as np
+
 try:
     with open('CarParkPos.txt', 'rb') as f:
         posList = pickle.load(f)
@@ -36,12 +37,26 @@ def mouseClick(events, x, y, flags, params):
     with open('CarParkPos.txt', 'wb') as f:
         pickle.dump(posList, f)
 
+def create_mask():
+    mask = np.zeros(img.shape[:2], dtype="uint8")
+    for pos in posList:
+        cv2.rectangle(mask, pos[0], pos[1], 255, -1)
+    cv2.imshow('Mask', mask)
+    cv2.imwrite('mask.png',mask)
+
 while True:
     img = cv2.imread('carParkImg.png')
     for pos in posList:
-        cv2.rectangle(img, pos[0], pos[1], (255, 0, 255), 1)
+        cv2.rectangle(img, pos[0], pos[1], (255, 0, 255), 2)
  
     cv2.imshow("RectangularSlots", img)
+
+    # Mouse Callback
     cv2.setMouseCallback("RectangularSlots", mouseClick)
+
+    # Keyboard
+    if cv2.waitKey(25) & 0xFF == ord('s'):
+        create_mask()
+
     if cv2.waitKey(25) & 0xFF == ord('q'):
         break
