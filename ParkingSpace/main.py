@@ -9,9 +9,9 @@ def calc_diff(im1, im2):
     return np.abs(np.mean(im1) - np.mean(im2))
 
 # saved_mask.png
-mask = './mask_1920_1080.png'
+mask = './mask1.png'
 
-video_path = './parking_1920_1080.mp4'
+video_path = './carPark1.mp4'
 
 mask = cv2.imread(mask, 0)
 

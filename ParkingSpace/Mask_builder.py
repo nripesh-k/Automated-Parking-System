@@ -6,7 +6,7 @@ from util import get_parking_spots
 
 try: 
     posList = []
-    mask = './mask.png'
+    mask = './mask1.png'
     mask = cv2.imread(mask, 0)
     connected_components = cv2.connectedComponentsWithStats(mask, 4, cv2.CV_32S)
     spots = get_parking_spots(connected_components)
@@ -54,12 +54,12 @@ def create_mask():
     for pos in posList:
         cv2.rectangle(mask, pos[0], pos[1], 255, -1)
     cv2.imshow('Mask', mask)
-    cv2.imwrite('mask.png',mask)
+    cv2.imwrite('mask1.png',mask)
 
 while True:
-    img = cv2.imread('carParkImg.png')
+    img = cv2.imread('carPark1.png')
     for pos in posList:
-        cv2.rectangle(img, pos[0], pos[1], (255, 0, 255), 2)
+        cv2.rectangle(img, pos[0], pos[1], (0, 0, 255), 2)
  
     cv2.imshow("RectangularSlots", img)
 
