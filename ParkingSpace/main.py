@@ -24,7 +24,6 @@ cap = cv2.VideoCapture(video_path)
 # Getting the boxes with connected components usage
 connected_components = cv2.connectedComponentsWithStats(mask, 4, cv2.CV_32S)
 spots = get_parking_spots(connected_components)
-print(spots)
 
 spots_status = [None for j in spots]
 diffs = [None for j in spots]
@@ -87,8 +86,8 @@ def process():
         cv2.putText(frame, 'Available spots: {} / {}'.format(str(sum(spots_status)), str(len(spots_status))), (100, 60),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 
-        cv2.namedWindow('frame', cv2.WINDOW_NORMAL)
-        cv2.imshow('frame', frame)
+        # cv2.namedWindow('frame', cv2.WINDOW_KEEPRATIO)
+        cv2.imshow('Current Status', frame)
         if cv2.waitKey(25) & 0xFF == ord('q'):
             break
 
@@ -112,9 +111,8 @@ process()
 
 @app.route('/')
 def index():
-    render_template('index.html')
     return Response(process(),
                      mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)
