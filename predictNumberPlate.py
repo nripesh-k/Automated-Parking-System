@@ -27,7 +27,7 @@ def findCluster(letterLike):
             while(j<len(c)):
                 for k,_ in enumerate(letterLike):
                     if not tracked[k]:
-                        if distance(letterLike[c[j]],letterLike[k]) < 1000:
+                        if distance(letterLike[c[j]],letterLike[k]) < 500:
                             tracked[k] = True
                             c.append(k)
                 j+=1
@@ -40,7 +40,8 @@ def findCluster(letterLike):
     else:
         numberPlateCluster = cluster[np.argmax([len(i) for i in cluster])]
     numbers = []
-    if len(numberPlateCluster)>=4:
+    # print(numberPlateCluster)
+    if len(numberPlateCluster)>=6:
         for c in numberPlateCluster:
             numbers.append(letterLike[c])
     return numbers
@@ -48,36 +49,43 @@ def findCluster(letterLike):
 def predictNumberPlate(numberPlate):
     numberPlatePrediction = ''
     recognitoinModel = mdl.model()
-    recognitoinModel.load_weights('weights.h5')
-    
-    
-    # maskedNumberPlateImage = cv2.adaptiveThreshold(numberPlate,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,15,-2)
-    _, maskedNumberPlateImage =  cv2.threshold(numberPlate,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    recognitoinModel.load_weights('trainedModel.h5')
 
+    # maskedNumberPlateImage = cv2.adaptiveThreshold(numberPlate,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,15,-2)
+    # maskedNumberPlateImage = cv2.GaussianBlur(numberPlate,(3,3),0)
+    _, maskedNumberPlateImage =  cv2.threshold(numberPlate,140,255,cv2.THRESH_BINARY)
+    # kernel = np.ones((2,2))
+    # maskedNumberPlateImage = cv2.erode(maskedNumberPlateImage, kernel, iterations=2)
     connections = cv2.connectedComponentsWithStats(maskedNumberPlateImage, 2, cv2.CV_32S)
     (numLabels, _, stats, _) = connections
     # rectangleImage = maskedNumberPlateImage.copy()
+    letters = []
     for i in range(1,numLabels):
         y = stats[i, cv2.CC_STAT_TOP]
         x = stats[i, cv2.CC_STAT_LEFT]
         w = stats[i, cv2.CC_STAT_WIDTH]
         h = stats[i, cv2.CC_STAT_HEIGHT]
-        area = stats[i, cv2.CC_STAT_AREA]
-        if area>500 and area<2500:
-            if not (h/w > 3):
-                img = np.zeros((1,50,50),dtype=np.float32)
-                img[0,:,:] = cv2.resize(maskedNumberPlateImage[y:y+h,x:x+w], (50,50))
-                # rectangleImage = cv2.rectangle(rectangleImage, (x,y), (x+w,y+h), (255,255,255),2)
-                prediction = recognitoinModel.predict(img, verbose=0)
-                numberPlatePrediction+=mdl.character[np.argmax(prediction[0])]
+        # area = stats[i, cv2.CC_STAT_AREA]
+        letters.append([x,y,w,h])
+
+    img = np.zeros((1,50,50),dtype=np.float32)
+    letters.sort(key=lambda x: x[0])
+    for l in letters:
+        x,y,w,h = l
+        img[0,:,:] = cv2.resize(maskedNumberPlateImage[y-4:y+h+4,x-4:x+w+4], (50,50))
+        # rectangleImage = cv2.rectangle(rectangleImage, (x,y), (x+w,y+h), (255,255,255),2)
+        prediction = recognitoinModel.predict(img, verbose=0)
+        numberPlatePrediction+=mdl.character[np.argmax(prediction[0])]
+
     # cv2.imshow('1', rectangleImage)
     # cv2.waitKey(3000)
     return numberPlatePrediction
 
 
 if __name__=='__main__':
-    video = cv2.VideoCapture('test.mp4')
-    record = {}
+    video = cv2.VideoCapture('example.mp4')
+    entry = {}
+    exit = {}
     priceCharged = {}
     
     while True:
@@ -89,8 +97,9 @@ if __name__=='__main__':
         image = cv2.resize(image, (620,480) )
         grayImage = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         _,maskedImage = cv2.threshold(grayImage,0,255,cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        cv2.imshow('1', maskedImage)
-        cv2.waitKey(50)
+
+        cv2.imshow('1', image)
+        cv2.waitKey(25)
         connections = cv2.connectedComponentsWithStats(maskedImage, 2, cv2.CV_32S)
         (numLabels, labels, stats, centroids) = connections
         letterLike = []
@@ -110,28 +119,39 @@ if __name__=='__main__':
             numbers = np.array(numbers)
             maxX,maxY,maxW,maxH = np.max(numbers, axis=0)
             x,y,_,_ = np.min(numbers, axis=0)
-            # print(maxX+maxW-x,maxY+maxH-y)
+            numberPlate = []
             if (maxX+maxW-x)/(maxY+maxH-y)>2:
-                if min_width <= maxX+maxW-x:
-                    numberPlate = grayImage[y-2:maxY+maxH+2,x-2:maxX+maxW+2]
-                    numberPlate = cv2.resize(numberPlate, (300,75))
-                    predict = True
-            else:
-                if min_width//2 <= maxX+maxW-x:
-                    numberPlate = grayImage[y-2:maxY+maxH+2,x-2:maxX+maxW+2]
-                    numberPlate = cv2.resize(numberPlate, (300,200))
-                    predict = True
+                # if min_width <= maxX+maxW-x:
+                numberPlate = grayImage[y-2:maxY+maxH+2,x-2:maxX+maxW+2]
+                numberPlate = cv2.resize(numberPlate, (300,75))
+                localizedImage = cv2.rectangle(image, (x,y), (maxX+maxW, maxY+maxH), (0,200,0), 2)
+                cv2.imshow('1', localizedImage)
+                cv2.waitKey(50)
+                predict = True
+            # else:
+            #     if min_width//2 <= maxX+maxW-x:
+            #         numberPlate = grayImage[y-2:maxY+maxH+2,x-2:maxX+maxW+2]
+            #         numberPlate = cv2.resize(numberPlate, (300,200))
+            #         predict = True
+
             if predict:
                 numberPlatePrediction = predictNumberPlate(numberPlate)
-                t = record.get(numberPlatePrediction)
-                if not t:
-                    record[numberPlatePrediction] = time.time()
-                    print(numberPlatePrediction)
-                elif time.time() - t < 15: # entrance time-limit
-                    # print(time.time()-t)
-                    continue
-                else:
-                    charge = (time.time() - t)*10 # time*rate
-                    priceCharged[numberPlatePrediction] = charge
-                    del record[numberPlatePrediction]
-                    print(priceCharged)
+                entered = entry.get(numberPlatePrediction)
+                exiting = exit.get(numberPlatePrediction)
+
+                if exiting:
+                    if time.time() - exiting > 15:
+                        del exit[numberPlatePrediction]
+
+                if not entered and not exiting:
+                    entry[numberPlatePrediction] = time.time()
+                    print(f"{numberPlatePrediction} entered")
+                elif entered: # entrance time-limit
+                    if time.time() - entered < 15:
+                        continue
+                    else:
+                        charge = (time.time() - entered)*4 # time*rate
+                        priceCharged[numberPlatePrediction] = charge
+                        del entry[numberPlatePrediction]
+                        exit[numberPlatePrediction] = time.time()
+                        print(f"{numberPlatePrediction} exited, Fee: Rs. {int(charge)}")
