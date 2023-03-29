@@ -2,11 +2,26 @@ import cv2
 import pickle
 import numpy as np
 
-try:
-    with open('CarParkPos.txt', 'rb') as f:
-        posList = pickle.load(f)
+from util import get_parking_spots
+
+try: 
+    posList = []
+    mask = './mask.png'
+    mask = cv2.imread(mask, 0)
+    connected_components = cv2.connectedComponentsWithStats(mask, 4, cv2.CV_32S)
+    spots = get_parking_spots(connected_components)
+    for spot in spots:
+        p1, p2 = (spot[0], spot[1]), (spot[2] + spot[0], spot[3] + spot[1])
+        posList.append((p1, p2))
+    print(posList)
 except:
     posList = []
+
+# try:
+#     with open('CarParkPos.txt', 'rb') as f:
+#         posList = pickle.load(f)
+# except:
+#     posList = []
  
 pt1 = None
 pt2 = None
@@ -24,9 +39,6 @@ def mouseClick(events, x, y, flags, params):
             pt2 = (x,y)
             posList.append((pt1, pt2))
             count = 0
-
-    # elif events == cv2.EVENT_LBUTTONUP:
-    #     pt2 = (x,y)
 
     elif events == cv2.EVENT_MBUTTONDOWN:
         for i, pos in enumerate(posList):
