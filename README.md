@@ -43,6 +43,36 @@ Normalized characters:
 ![7](https://github.com/nripesh-k/Automated-Parking-System/blob/main/readmeImages/1_7.jpg?raw=true)
 ![8](https://github.com/nripesh-k/Automated-Parking-System/blob/main/readmeImages/1_8.jpg?raw=true)
 
+## CNN Model
+
+<img src="https://github.com/nripesh-k/Automated-Parking-System/blob/main/readmeImages/CNN-Representation.jpg?raw=true" width = '900' height = '500'>
+
+The architectrue of the CNN model is similar to other character recognition models (handwritten) with 3 convolutional layers and 3 densely connected layers.
+
+Output of Different Layers:
+- Example data:
+
+![example](https://github.com/nripesh-k/Automated-Parking-System/blob/main/readmeImages/characters.png?raw=true)
+
+- 10 filter Output of Layer 1:
+
+<img src="https://github.com/nripesh-k/Automated-Parking-System/blob/main/readmeImages/output_filter1.png?raw=true" width = '500' height = '500'>
+
+- 10 filter Output of Layer 2:
+
+<img src="https://github.com/nripesh-k/Automated-Parking-System/blob/main/readmeImages/output_filter2.png?raw=true" width = '500' height = '500'>
+
+
+- 10 filter Output of Layer 3:
+
+<img src="https://github.com/nripesh-k/Automated-Parking-System/blob/main/readmeImages/output_filter3.png?raw=true" width = '500' height = '500'>
+
+
+- Model Accuracy vs Epoch (Batch Size=20)
+<img src="https://github.com/nripesh-k/Automated-Parking-System/blob/main/readmeImages/(batch20)accuracy.png?raw=true" width = '450' height= '400'>
+
+- Cross-entropy Loss vs Epoch (Batch Size=20)
+<img src="https://github.com/nripesh-k/Automated-Parking-System/blob/main/readmeImages/(batch20)loss.png?raw=true" width='450' height='400'>
 
 
 ## Future Enhancements
