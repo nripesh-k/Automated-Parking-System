@@ -6,7 +6,7 @@ from util import get_parking_spots
 
 try: 
     posList = []
-    mask = './mask1.png'
+    mask = './mask_animated.png'
     mask = cv2.imread(mask, 0)
     connected_components = cv2.connectedComponentsWithStats(mask, 4, cv2.CV_32S)
     spots = get_parking_spots(connected_components)
@@ -46,20 +46,20 @@ def mouseClick(events, x, y, flags, params):
             if (p1[0] < x < p2[0] or p2[0] < x < p1[0]) and (p1[1]< y < p2[1] or p2[1]< y < p1[1]):
                 posList.pop(i)
  
-    with open('CarParkPos.txt', 'wb') as f:
-        pickle.dump(posList, f)
+    # with open('CarParkPos.txt', 'wb') as f:
+    #     pickle.dump(posList, f)
 
 def create_mask():
     mask = np.zeros(img.shape[:2], dtype="uint8")
     for pos in posList:
         cv2.rectangle(mask, pos[0], pos[1], 255, -1)
     cv2.imshow('Mask', mask)
-    cv2.imwrite('mask1.png',mask)
+    cv2.imwrite('mask_animated.png',mask)
 
 while True:
-    img = cv2.imread('carPark1.png')
+    img = cv2.imread('lot_animated.png')
     for pos in posList:
-        cv2.rectangle(img, pos[0], pos[1], (0, 0, 255), 2)
+        cv2.rectangle(img, pos[0], pos[1], (0, 0, 255), 1)
  
     cv2.imshow("RectangularSlots", img)
 

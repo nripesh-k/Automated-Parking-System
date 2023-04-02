@@ -4,7 +4,7 @@ from skimage.transform import resize
 import numpy as np
 import cv2
 
-MODEL = pickle.load(open("saved_model.p", "rb"))
+MODEL = pickle.load(open("model.p", "rb"))
 
 def empty_or_not(spot_bgr):
 
