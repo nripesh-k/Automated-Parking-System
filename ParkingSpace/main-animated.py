@@ -1,6 +1,5 @@
 import cv2
 import pickle
-import cvzone
 import numpy as np
 from util import get_parking_spots
 
@@ -32,9 +31,9 @@ def checkParkingSpace(imgPro):
             spaceCounter += 1
         else:
             color = (0, 0, 200)
-        cv2.rectangle(img, (x1,y1), (pos[0] + pos[2], pos[1] + pos[3]), color, 2)
-        # cvzone.putTextRect(img, str(count), (x1, y1 + h ), scale=1,
-        #                    thickness=2, offset=0, colorR=color)
+        cv2.rectangle(img, (x1,y1-5), (pos[0] + pos[2], pos[1] + pos[3]), color, 2)
+        # cv2.putText(img, str(count), (x1, y1 + h ), cv2.FONT_HERSHEY_SIMPLEX, 0.6,
+        #                    color, 2)
     
     cv2.rectangle(img, (20, 20), (350, 60), (0, 0, 0), -1)
     cv2.putText(img, 'Available spots: {} / {}'.format(str(spaceCounter), str(len(spots))), (25, 50),
