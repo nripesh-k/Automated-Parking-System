@@ -16,25 +16,29 @@ cap = cv2.VideoCapture(video_path)
  
 # Getting the boxes with connected components usage
 connected_components = cv2.connectedComponentsWithStats(mask, 4, cv2.CV_32S)
-posList = get_parking_spots(connected_components)
+spots = get_parking_spots(connected_components)
 
 def checkParkingSpace(imgPro):
     spaceCounter = 0
  
-    for pos in posList:
+    for pos in spots:
         x1, y1, w, h = pos
  
         imgCrop = imgPro[y1:y1 + h, x1:x1 + w]
         count = cv2.countNonZero(imgCrop)
  
-        if count < 220:
+        if count < 200:
             color = (0, 255, 0)
             spaceCounter += 1
         else:
             color = (0, 0, 200)
         cv2.rectangle(img, (x1,y1), (pos[0] + pos[2], pos[1] + pos[3]), color, 2)
-        cvzone.putTextRect(img, str(count), (x1, y1 + h ), scale=1,
-                           thickness=2, offset=0, colorR=color)
+        # cvzone.putTextRect(img, str(count), (x1, y1 + h ), scale=1,
+        #                    thickness=2, offset=0, colorR=color)
+    
+    cv2.rectangle(img, (20, 20), (350, 60), (0, 0, 0), -1)
+    cv2.putText(img, 'Available spots: {} / {}'.format(str(spaceCounter), str(len(spots))), (25, 50),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
 
 while True:
  
