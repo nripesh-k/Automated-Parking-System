@@ -1,35 +1,10 @@
-from keras.models import Sequential
-from keras.layers import Conv2D, Dense, MaxPool2D, Flatten
 from keras.callbacks import ModelCheckpoint
-from keras.optimizers import Adam
 import matplotlib.pyplot as plt
 import prepareData as pd
-
-def model():
-    model = Sequential()
-    model.add(Conv2D(filters=32,kernel_size=(5,5), activation='relu', padding='valid',\
-                    use_bias=True, input_shape=(50,50,1)))
-    model.add(MaxPool2D(pool_size=(2,2), strides=2))
-
-    model.add(Conv2D(filters=32, kernel_size=(5,5), activation='relu', padding='valid'))
-    model.add(MaxPool2D(pool_size=(2,2), strides=2))
-    
-    model.add(Conv2D(filters=64, kernel_size=(3,3), activation='relu', padding='valid'))
-    model.add(MaxPool2D(pool_size=(2,2), strides=2))
-
-    model.add(Flatten())
-
-    model.add(Dense(64, activation='relu'))
-    model.add(Dense(128, activation = 'relu'))
-    model.add(Dense(12, activation='softmax'))
-
-    adam = Adam(learning_rate=0.001)
-    model.compile(optimizer=adam, loss='categorical_crossentropy', metrics=['accuracy'])
-
-    return model
+import model as mdl
 
 def train():
-    modelCNN = model()
+    modelCNN = mdl.model()
     print(modelCNN.summary())
 
     data, label = pd.readHDF5('train.h5')
