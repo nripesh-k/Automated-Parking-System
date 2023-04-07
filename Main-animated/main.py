@@ -20,7 +20,7 @@ waitTimer2 = None
 connected_components = cv2.connectedComponentsWithStats(lot_mask, 4, cv2.CV_32S)
 spots = fn.get_parking_spots(connected_components)
 
-recognitionModel = mdl.model()
+recognitionModel = mdl.NLPD_model()
 recognitionModel.load_weights('./Resources/NLPD_Model.h5')
 
 records = {}

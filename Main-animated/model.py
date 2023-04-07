@@ -31,13 +31,13 @@ NLPD_characters = {
     7:'7',
     8:'8',
     9:'9',
-    10:'Ba',
-    11:'Cha',
-    12:'Pa',
+    10:'B',
+    11:'C',
+    12:'P',
 }
 
 
-def model():
+def NLPD_model():
     model = Sequential()
     model.add(Conv2D(filters=32,kernel_size=(5,5), activation='relu', padding='valid',\
                     use_bias=True, input_shape=(32,32,1)))
@@ -54,6 +54,29 @@ def model():
     model.add(Dense(64, activation='relu'))
     model.add(Dense(96, activation = 'relu'))
     model.add(Dense(13, activation='softmax'))
+
+    adam = Adam(learning_rate=0.001)
+    model.compile(optimizer=adam, loss='categorical_crossentropy', metrics=['accuracy'])
+
+    return model
+
+def model():
+    model = Sequential()
+    model.add(Conv2D(filters=32,kernel_size=(5,5), activation='relu', padding='valid',\
+                    use_bias=True, input_shape=(32,32,1)))
+    model.add(MaxPool2D(pool_size=(2,2), strides=2))
+
+    model.add(Conv2D(filters=64, kernel_size=(5,5), activation='relu', padding='valid'))
+    model.add(MaxPool2D(pool_size=(2,2), strides=2))
+    
+    model.add(Conv2D(filters=32, kernel_size=(3,3), activation='relu', padding='valid'))
+    model.add(MaxPool2D(pool_size=(2,2), strides=2))
+
+    model.add(Flatten())
+
+    model.add(Dense(64, activation='relu'))
+    model.add(Dense(128, activation = 'relu'))
+    model.add(Dense(12, activation='softmax'))
 
     adam = Adam(learning_rate=0.001)
     model.compile(optimizer=adam, loss='categorical_crossentropy', metrics=['accuracy'])
