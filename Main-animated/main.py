@@ -15,26 +15,26 @@ entry_video = cv2.VideoCapture('../Blender/entry.mp4')
 exit_video = cv2.VideoCapture('../Blender/exit.mp4')
 waitTimer1 = None
 waitTimer2 = None
- 
+
 # Getting the boxes with connected components usage
 connected_components = cv2.connectedComponentsWithStats(lot_mask, 4, cv2.CV_32S)
 spots = fn.get_parking_spots(connected_components)
 
 recognitionModel = mdl.model()
-recognitionModel.load_weights('./Resources/trainedModel.h5')
+recognitionModel.load_weights('./Resources/NLPD_Model.h5')
 
 records = {}
 rate = 9.5
 
 def checkParkingSpace(imgPro, img):
     spaceCounter = 0
- 
+
     for pos in spots:
         x1, y1, w, h = pos
- 
+
         imgCrop = imgPro[y1:y1 + h, x1:x1 + w]
         count = cv2.countNonZero(imgCrop)
- 
+
         if count < 200:
             color = (0, 255, 0)
             spaceCounter += 1
@@ -49,18 +49,18 @@ def checkParkingSpace(imgPro, img):
                 cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
 
 def lotMonitor():
-    success, img = lot.read()
+    _, img = lot.read()
 
     img = cv2.resize(img,(630,732))
 
     imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     imgBlur = cv2.GaussianBlur(imgGray, (3, 3), 1)
     imgThreshold = cv2.adaptiveThreshold(imgBlur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                         cv2.THRESH_BINARY_INV, 25, 16)
+                                        cv2.THRESH_BINARY_INV, 25, 16)
     imgMedian = cv2.medianBlur(imgThreshold, 5)
     kernel = np.ones((3, 3), np.uint8)
     imgDilate = cv2.dilate(imgMedian, kernel, iterations=1)
- 
+
     checkParkingSpace(imgDilate, img)
     cv2.imshow("Parking Lot", img)
     cv2.moveWindow("Parking Lot", 650,100)
@@ -89,34 +89,36 @@ def predictEntranceNumberPlate(numberPlate):
             if w/h<3 and h/w<3:
                 letters.append([x,y,w,h])
 
-    img = np.zeros((1,50,50),dtype=np.float32)
+    img = np.zeros((1,32,32),dtype=np.float32)
     letters.sort(key=lambda x: x[0])
     for l in letters:
         x,y,w,h = l
         try:
-            letterImage = maskedNumberPlateImage[y-2:y+h+2,x-2:x+w+2]
-            img[0,:,:] = cv2.resize(letterImage, (50,50))
+            # letterImage = maskedNumberPlateImage[y-2:y+h+2,x-2:x+w+2]
+            letterImage = numberPlate[y-2:y+h+2,x-2:x+w+2]
+            _, letterImage = cv2.threshold(letterImage,0,255,cv2.THRESH_OTSU)
+            img[0,:,:] = cv2.resize(letterImage, (32,32))
             prediction = recognitionModel.predict(img, verbose=0)
-            numberPlatePrediction+=mdl.character[np.argmax(prediction[0])]
+            numberPlatePrediction+=mdl.NLPD_characters[np.argmax(prediction[0])]
         except:
             continue
     return numberPlatePrediction
 
 def entranceMonitor():
     global waitTimer1
-    success, image = entry_video.read()
+    _, image = entry_video.read()
     image = cv2.resize(image, (620,420) )
     grayImage = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     threshImage = cv2.adaptiveThreshold(grayImage,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,401,-1)
     _,maskedImage = cv2.threshold(threshImage,0,255,cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
     cv2.imshow('Entrance', image)
-    cv2.moveWindow('Entrance', 20,100)
+    cv2.moveWindow('Entrance', 20, 100)
     # cv2.waitKey(25)
     if not waitTimer1:
         connections = cv2.connectedComponentsWithStats(maskedImage, 2, cv2.CV_32S)
-        (numLabels, labels, stats, centroids) = connections
-        components = grayImage.copy()
+        (numLabels, _, stats, _) = connections
+        # components = grayImage.copy()
         letterLike = []
         for i in range(1,numLabels):
             y = stats[i, cv2.CC_STAT_TOP]
@@ -142,9 +144,7 @@ def entranceMonitor():
 
             if predict:
                 numberPlatePrediction = predictEntranceNumberPlate(numberPlate)
-                numberPlateM = numberPlatePrediction.replace('4', '_')
-                numberPlateM = numberPlateM.replace('Pa', '_')
-                records[numberPlateM] = time.time()
+                records[numberPlatePrediction] = time.time()
                 print(f"{numberPlatePrediction} has entered")
                 waitTimer1 = time.time()
     else:
@@ -154,8 +154,6 @@ def entranceMonitor():
 def predictExitNumberPlate(numberPlate):
     global recognitionModel
     numberPlatePrediction = ''
-    recognitionModel = mdl.model()
-    recognitionModel.load_weights('./Resources/trainedModel.h5')
     maskedNumberPlateImage = cv2.GaussianBlur(numberPlate,(3,3),0)
     _, maskedNumberPlateImage =  cv2.threshold(maskedNumberPlateImage,0,255,cv2.THRESH_OTSU)
     _,numberPlateThreshImage = cv2.threshold(numberPlate,0,255,cv2.THRESH_OTSU)
@@ -164,7 +162,7 @@ def predictExitNumberPlate(numberPlate):
     numberPlateThreshImage = cv2.erode(numberPlateThreshImage, kernel, iterations=1)
     connections = cv2.connectedComponentsWithStats(maskedNumberPlateImage, 2, cv2.CV_32S)
     (numLabels, _, stats, _) = connections
-    rectangleImage = maskedNumberPlateImage.copy()
+    # rectangleImage = maskedNumberPlateImage.copy()
     letters = []
     for i in range(1,numLabels):
         y = stats[i, cv2.CC_STAT_TOP]
@@ -176,20 +174,23 @@ def predictExitNumberPlate(numberPlate):
             if w/h<3 and h/w<3:
                 letters.append([x,y,w,h])
 
-    img = np.zeros((1,50,50),dtype=np.float32)
+    img = np.zeros((1,32,32),dtype=np.float32)
     letters.sort(key=lambda x: x[0])
     for l in letters:
         x,y,w,h = l
-        img[0,:,:] = cv2.resize(numberPlateThreshImage[y-2:y+h+2,x-2:x+w+2], (50,50))
+        letterImage = numberPlateThreshImage[y-4:y+h+4,x-4:x+w+4]
+        # _, letterImage = cv2.threshold(letterImage,0,255,cv2.THRESH_OTSU)
+        # letterImage = cv2.erode(letterImage, kernel, iterations=3)
+
+        img[0,:,:] = cv2.resize(letterImage, (32,32))
         prediction = recognitionModel.predict(img, verbose=0)
-        numberPlatePrediction+=mdl.character[np.argmax(prediction[0])]
+        numberPlatePrediction+=mdl.NLPD_characters[np.argmax(prediction[0])]
 
     return numberPlatePrediction
 
 def exitMonitor():
     global waitTimer2, rate
-    success, image = exit_video.read()
-    min_width = 120
+    _, image = exit_video.read()
     image = cv2.resize(image, (620,420) )
     grayImage = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     _,maskedImage = cv2.threshold(grayImage,0,255,cv2.THRESH_BINARY + cv2.THRESH_OTSU)
@@ -200,8 +201,8 @@ def exitMonitor():
 
     if not waitTimer2:
         connections = cv2.connectedComponentsWithStats(maskedImage, 2, cv2.CV_32S)
-        (numLabels, labels, stats, centroids) = connections
-        components = grayImage.copy()
+        (numLabels, _, stats, _) = connections
+        # components = grayImage.copy()
         letterLike = []
         for i in range(1,numLabels):
             y = stats[i, cv2.CC_STAT_TOP]
@@ -223,19 +224,22 @@ def exitMonitor():
             if (maxX+maxW-x)/(maxY+maxH-y)>2:
                 numberPlate = grayImage[y-5:maxY+maxH+5,x-30:maxX+maxW+30]
                 numberPlate = cv2.resize(numberPlate, (300,80))
-                localizedImage = cv2.rectangle(grayImage, (x,y), (maxX+maxW, maxY+maxH), (0,200,0), 2)
+                # localizedImage = cv2.rectangle(grayImage, (x,y), (maxX+maxW, maxY+maxH), (0,200,0), 2)
                 predict = True
 
             if predict:
                 numberPlatePrediction = predictExitNumberPlate(numberPlate)
+                print(f"{numberPlatePrediction} has exited.")
                 #manual
-                numberPlateM = numberPlatePrediction.replace('Pa', '_')
-                price = int((time.time() - records[numberPlateM]) * rate/10) * 10
-                del records[numberPlateM]
-                print(f"{numberPlatePrediction} has exited. Total Fee: Rs. {price}")
+                try:
+                    price = int((time.time() - records[numberPlatePrediction]) * rate/10) * 10
+                    del records[numberPlatePrediction]
+                    print(f" Total Fee: Rs. {price}")
+                except:
+                    pass
                 waitTimer2 = time.time()
     else:
-        if time.time() - waitTimer2 > 5:
+        if time.time() - waitTimer2 > 9:
             waitTimer2 = None
 
 

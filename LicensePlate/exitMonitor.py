@@ -7,7 +7,7 @@ import functions as fn
 def predictExitNumberPlate(numberPlate):
     numberPlatePrediction = ''
     recognitoinModel = mdl.model()
-    recognitoinModel.load_weights('trainedModel.h5')
+    recognitoinModel.load_weights('NLPD_Model.h5')
     maskedNumberPlateImage = cv2.GaussianBlur(numberPlate,(3,3),0)
     _, maskedNumberPlateImage =  cv2.threshold(maskedNumberPlateImage,0,255,cv2.THRESH_OTSU)
     _,numberPlateThreshImage = cv2.threshold(numberPlate,0,255,cv2.THRESH_OTSU)
@@ -28,17 +28,19 @@ def predictExitNumberPlate(numberPlate):
             if w/h<3 and h/w<3:
                 letters.append([x,y,w,h])
 
-    img = np.zeros((1,50,50),dtype=np.float32)
+    img = np.zeros((1,32,32),dtype=np.float32)
     letters.sort(key=lambda x: x[0])
     for l in letters:
         x,y,w,h = l
-        img[0,:,:] = cv2.resize(numberPlateThreshImage[y-2:y+h+2,x-2:x+w+2], (50,50))
+        letterImage = numberPlateThreshImage[y-4:y+h+4,x-4:x+w+4]
+        # _,letterImage = cv2.threshold(letterImage, 0, 255, cv2.THRESH_OTSU)
+        # kernel = np.ones((2,1))
+        # letterImage = cv2.dilate(letterImage, kernel, iterations=1)
+        img[0,:,:] = cv2.resize(letterImage, (32,32))
         rectangleImage = cv2.rectangle(rectangleImage, (x,y), (x+w,y+h), (255,255,255),2)
         prediction = recognitoinModel.predict(img, verbose=0)
-        numberPlatePrediction+=mdl.character[np.argmax(prediction[0])]
-
-    cv2.imshow('1', rectangleImage)
-    cv2.waitKey(1000)
+        numberPlatePrediction+=mdl.NLPD_characters[np.argmax(prediction[0])]
+        
     return numberPlatePrediction
 
 

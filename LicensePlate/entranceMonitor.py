@@ -7,10 +7,10 @@ import functions as fn
 def predictEntranceNumberPlate(numberPlate):
     numberPlatePrediction = ''
     recognitoinModel = mdl.model()
-    recognitoinModel.load_weights('trainedModel.h5')
+    recognitoinModel.load_weights('NLPD_Model.h5')
 
     maskedNumberPlateImage = cv2.adaptiveThreshold(numberPlate,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,81,-2)
-    # maskedNumberPlateImage = cv2.GaussianBlur(maskedNumberPlateImage,(3,3),0)
+    maskedNumberPlateImage = cv2.GaussianBlur(maskedNumberPlateImage,(3,3),0)
     _, maskedNumberPlateImage =  cv2.threshold(numberPlate,100,255,cv2.THRESH_BINARY)
     kernel = np.ones((2,2))
     maskedNumberPlateImage = cv2.erode(maskedNumberPlateImage, kernel, iterations=1)
@@ -29,16 +29,17 @@ def predictEntranceNumberPlate(numberPlate):
             if w/h<3 and h/w<3:
                 letters.append([x,y,w,h])
 
-    img = np.zeros((1,50,50),dtype=np.float32)
+    img = np.zeros((1,32,32),dtype=np.float32)
     letters.sort(key=lambda x: x[0])
     for l in letters:
         x,y,w,h = l
         try:
-            letterImage = maskedNumberPlateImage[y-2:y+h+2,x-2:x+w+2]
-            img[0,:,:] = cv2.resize(letterImage, (50,50))
+            letterImage = numberPlate[y-2:y+h+2,x-2:x+w+2]
+            _, letterImage = cv2.threshold(letterImage,0,255, cv2.THRESH_OTSU)
+            img[0,:,:] = cv2.resize(letterImage, (32,32))
             rectangleImage = cv2.rectangle(rectangleImage, (x,y), (x+w,y+h), (255,255,255),2)
             prediction = recognitoinModel.predict(img, verbose=0)
-            numberPlatePrediction+=mdl.character[np.argmax(prediction[0])]
+            numberPlatePrediction+=mdl.NLPD_characters[np.argmax(prediction[0])]
         except:
             continue
     return numberPlatePrediction
