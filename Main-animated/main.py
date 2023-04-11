@@ -43,7 +43,7 @@ def checkParkingSpace(imgPro, img):
         cv2.rectangle(img, (x1,y1-5), (pos[0] + pos[2], pos[1] + pos[3]), color, 2)
         # cv2.putText(img, str(count), (x1, y1 + h ), cv2.FONT_HERSHEY_SIMPLEX, 0.6,
         #                    color, 2)
-    
+        
     cv2.rectangle(img, (20, 20), (350, 60), (0, 0, 0), -1)
     cv2.putText(img, 'Available spots: {} / {}'.format(str(spaceCounter), str(len(spots))), (25, 50),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
@@ -51,21 +51,21 @@ def checkParkingSpace(imgPro, img):
 def lotMonitor():
     _, img = lot.read()
 
-    img = cv2.resize(img,(630,732))
+    img = cv2.resize(img,(630,732))        
 
     imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    imgBlur = cv2.GaussianBlur(imgGray, (3, 3), 1)
-    imgThreshold = cv2.adaptiveThreshold(imgBlur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+    # imgBlur = cv2.GaussianBlur(imgGray, (3, 3), 1)
+    imgMedian = cv2.medianBlur(imgGray, 5)
+    imgThreshold = cv2.adaptiveThreshold(imgMedian, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                         cv2.THRESH_BINARY_INV, 25, 16)
-    imgMedian = cv2.medianBlur(imgThreshold, 5)
     kernel = np.ones((3, 3), np.uint8)
-    imgDilate = cv2.dilate(imgMedian, kernel, iterations=1)
+    imgDilate = cv2.dilate(imgThreshold, kernel, iterations=1)
 
     checkParkingSpace(imgDilate, img)
     cv2.imshow("Parking Lot", img)
     cv2.moveWindow("Parking Lot", 650,100)
-    # cv2.imshow("ImageBlur", imgBlur)
-    # cv2.imshow("ImageThres", imgMedian)
+    # cv2.imshow("imgThreshold", imgThreshold)
+    # cv2.imshow("imgDilate", imgDilate)
 
 def predictEntranceNumberPlate(numberPlate):
     global recognitionModel
@@ -256,6 +256,7 @@ if __name__ == "__main__":
             exit_video.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
         lotMonitor()
+
         entranceMonitor()
         exitMonitor()
 
