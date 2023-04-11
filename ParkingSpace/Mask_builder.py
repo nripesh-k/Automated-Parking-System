@@ -59,7 +59,7 @@ def create_mask():
 while True:
     img = cv2.imread('lot_animated.png')
     for pos in posList:
-        cv2.rectangle(img, pos[0], pos[1], (0, 0, 255), 1)
+        cv2.rectangle(img, pos[0], pos[1], (0, 0, 255), 2)
  
     cv2.imshow("RectangularSlots", img)
 
